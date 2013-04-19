@@ -16,6 +16,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
+
+#include <stdint.h>  
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -27,11 +29,15 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <mtd/mtd-abi.h>
 #include <mtd/mtd-user.h>
 
 #include "debug.h"
 
 #include "genecc.h"
+#include "bchtool.h"
+
+void dump_stats(void);
 
 enum exit_codes {
 	EXIT_OK			= 0,
@@ -55,6 +61,7 @@ static int			write_mode;
 static int			erase_mode;
 static int			legacy;
 static int			dm365_rbl;
+static int			omap_bch;
 static int			ubi = 0;
 static int			genecc;
 static int			quiet;
@@ -80,6 +87,7 @@ void usage(void)
 "      --failbad    Fail if any bad block is found\n"
 "      --maxoff x   Do not go above this absolute offset\n"
 "      --legacy     Write legacy infix OOB layout\n"
+"      --omap-bch   Write omap BCH compatible OOB layout\n"
 "      --dm365-rbl  Write DM365 RBL compatible OOB layout\n"
 "      --ubi        UBI writing: per block, skip trailing all-FF pages\n"
 "  -q, --quiet\n"
@@ -115,6 +123,7 @@ void handle_options(int argc, char *argv[])
 			{"legacy",		no_argument,		0, 0},
 			{"ubi",			no_argument,		0, 0},
 			{"dm365-rbl",	no_argument,		0, 0},
+			{"omap-bch",	no_argument,		0, 0},
 			{"write",		no_argument,		0, 'w'},
 			{"erase",		no_argument,		0, 'e'},
 			{"start",		required_argument,	0, 's'},
@@ -146,6 +155,9 @@ void handle_options(int argc, char *argv[])
 				break;
 			case 4:
 				dm365_rbl = 1;
+				break;
+			case 5:
+				omap_bch = 1;
 				break;
 			}
 			break;
@@ -220,6 +232,8 @@ void handle_options(int argc, char *argv[])
 
 	if (error) {
 		usage();
+        dump_stats();
+
 		exit(EXIT_FAIL);
 	}
 }
@@ -230,6 +244,8 @@ void dump_stats(void)
 	fprintf(stderr, "Max offset:       0x%-8x\n", max_off);
 	fprintf(stderr, "Requested length: 0x%-8x bytes\n", req_length);
 	fprintf(stderr, "Page size:        0x%-8x bytes\n", mi.writesize);
+	fprintf(stderr, "Page erasesize:   0x%-8x bytes\n", mi.erasesize);
+	fprintf(stderr, "OOB size:         0x%-8x bytes\n", mi.oobsize);
 	fprintf(stderr, "Pages needed:     %-6d\n", req_pages);
 	if (write_mode)
 		fprintf(stderr, "Input file:       0x%-8x bytes\n", input_size);
@@ -281,6 +297,8 @@ int write_page(int blockoff, int pagenum)
 			layout = GENECC_LAYOUT_LEGACY;
 		} else if (dm365_rbl) {
 			layout = GENECC_LAYOUT_DM365_RBL;
+		} else if (omap_bch) {
+			layout = GENECC_LAYOUT_OMAP_BCH;
 		} else {
 			ERR("genecc with unknown layout!\n");
 			return -EINVAL;
@@ -389,8 +407,11 @@ int main(int argc, char *argv[])
 
 	handle_options(argc, argv);
 
-	if (legacy || dm365_rbl)
+	if (legacy || dm365_rbl || omap_bch)
+    {
 		genecc = 1;
+		fprintf(stderr, "ecc information will be generated and written to the nand\n");
+    }
 	else
 		genecc = 0;
 
@@ -495,6 +516,7 @@ int main(int argc, char *argv[])
 	 * Main write loop:
 	 */
 
+    dump_stats();
 	rewind = 0;
 	// start at beginning of block containing start_off
 	for (block_off = start_off & ~(mi.erasesize - 1);

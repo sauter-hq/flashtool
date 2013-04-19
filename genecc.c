@@ -17,13 +17,15 @@
 
 #include "debug.h"
 #include "genecc.h"
+#include "bchtool.h"
 
 const int subsz_raw = 512 + 16;
 const int subsz_data = 512;
 const int pagesz_data = 2048;
+const int ecc_size = 128;
 
 // hardcode for the only sizing we care about, for now
-u8 mtd_raw_buf[2048 + 64];
+u8 mtd_raw_buf[2048 + 128];
 
 /*
  * Reed-Solomon ECC code reverse-engineered from TI PSP flash_utils genecc
@@ -37,8 +39,8 @@ u8 mtd_raw_buf[2048 + 64];
 
 typedef signed int	bgfe;	// BinaryGaloisFieldElement
 
-const bgfe poly = 0x409;
-const bgfe primelement = 2;
+static const bgfe poly = 0x409;
+static const bgfe primelement = 2;
 
 bgfe gp[2 * MAX_CORR_ERR + 1];	// generator poly
 bgfe alpha[LENGTH];				// 4KB
@@ -87,7 +89,7 @@ static inline s32 order(bgfe x)
 	return r > 0 ? r : 0;
 }
 
-bgfe modulo(bgfe x, bgfe y)
+bgfe modulo_gen(bgfe x, bgfe y)
 {
 	s32 ordx, ordy;
 
@@ -113,7 +115,7 @@ bgfe multiply(bgfe x, bgfe y)
 			temp ^= y << i;				// bgfe += is a ^=
 		mask <<= 1;
 	}
-	return modulo(temp, poly);
+	return modulo_gen(temp, poly);
 }
 
 void genecc_init(void)
@@ -175,6 +177,27 @@ void gen_subpage_ecc(const u8 *buf, u8 *ecc)
 	}
 }
 
+/**
+Currently BCH8 is supported with software ecc error correction in mainline.
+The layout for BCH8 ECC layout is
+00-01 -> BAD block markers
+02-11 -> oob free area
+12-63 -> BCH8 ECC.
+
+RBL ECC layout is
+00-01 -> BAD block markers
+02-57 -> BCH8 ecc layout
+58-63 -> OOB free area
+
+As u-boot also maintain RBL ecc layout, write from U-boot
+and read from Linux requires compatibility with RBL ecc layout.
+The same is achieved in the patch [1], with by setting is_elm_used
+to true.
+
+1. https://lkml.org/lkml/2012/10/31/87
+2. https://lkml.org/lkml/2012/10/11/20
+
+ */
 unsigned char *do_genecc(const u8 *src, int layout)
 {
 	int n;
@@ -212,6 +235,15 @@ unsigned char *do_genecc(const u8 *src, int layout)
 			raw_subpage = &mtd_raw_buf[subsz_data * n];
 			gen_subpage_ecc(raw_subpage, oob + (n * 16) + 6);
 		}
+		break;
+	case GENECC_LAYOUT_OMAP_BCH:
+        // kernel 3.2 pagesize is 2k
+		memcpy(mtd_raw_buf, src, pagesz_data);
+		oob = mtd_raw_buf + pagesz_data;
+        // set the bad block marker values to 0xff
+        memset(oob, 0xff, ecc_size);
+		raw_subpage = &mtd_raw_buf[0];
+		bch_calculate_ecc(raw_subpage, oob + 12);
 		break;
 	default:
 		ERR("BUG: bad layout value %d\n", layout);

@@ -1,0 +1,8 @@
+SET(CMAKE_SYSTEM_NAME Linux)
+SET(CMAKE_C_COMPILER  /opt/OSELAS.Toolchain-2011.03.1/arm-cortexa8-linux-gnueabi/gcc-4.5.2-glibc-2.13-binutils-2.21-kernel-2.6.36-sanitized/bin/arm-cortexa8-linux-gnueabi-gcc)
+SET(CMAKE_CXX_COMPILER /opt/OSELAS.Toolchain-2011.03.1/arm-cortexa8-linux-gnueabi/gcc-4.5.2-glibc-2.13-binutils-2.21-kernel-2.6.36-sanitized/bin/arm-cortexa8-linux-gnueabi-g++)
+SET(CMAKE_FIND_ROOT_PATH /opt/OSELAS.Toolchain-2011.03.1/arm-cortexa8-linux-gnueabi/gcc-4.5.2-glibc-2.13-binutils-2.21-kernel-2.6.36-sanitized/sysroot-arm-cortexa8-linux-gnueabi/) 
+SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+SET(CMAKE_INSTALL_PREFIX /opt/OSELAS.Toolchain-2011.03.1/arm-cortexa8-linux-gnueabi/gcc-4.5.2-glibc-2.13-binutils-2.21-kernel-2.6.36-sanitized/sysroot-arm-cortexa8-linux-gnueabi)
