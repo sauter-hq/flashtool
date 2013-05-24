@@ -36,7 +36,7 @@
 
 #include "genecc.h"
 #include "bchtool.h"
-#include "hwromcode.h"
+#include "hammingromcode.h"
 
 void dump_stats(void);
 

@@ -18,7 +18,7 @@
 #include "debug.h"
 #include "genecc.h"
 #include "bchtool.h"
-#include "hwromcode.h"
+#include "hammingromcode.h"
 
 const int subsz_raw = 512 + 16;
 const int subsz_data = 512;
@@ -256,7 +256,7 @@ unsigned char *do_genecc(const u8 *src, int layout)
 		for (n = 0; n < 4; n++) {
 			raw_subpage = &mtd_raw_buf[subsz_data * n];
 			unsigned char *p = (oob + 2 + (n * 3 /*bytes per ECC*/));
-			hwromcode_calculate_ecc(raw_subpage, p);
+			hammingromcode_calculate_ecc(raw_subpage, p);
 
 		}
 		

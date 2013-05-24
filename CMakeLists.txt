@@ -5,11 +5,7 @@ project (flashtool)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
 # Make sure warning comes
-SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-sign-compare -Istandalone")
-
-IF(NOT CMAKE_CROSSCOMPILING)
-    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
-ENDIF(NOT CMAKE_CROSSCOMPILING)
+SET (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-sign-compare ")
 
 # Versioning
 set (flashtool_VERSION_MAJOR 0)
