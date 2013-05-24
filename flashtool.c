@@ -36,6 +36,7 @@
 
 #include "genecc.h"
 #include "bchtool.h"
+#include "hwromcode.h"
 
 void dump_stats(void);
 
@@ -62,6 +63,7 @@ static int			erase_mode;
 static int			legacy;
 static int			dm365_rbl;
 static int			omap_bch;
+static int			omap_hamming;
 static int			ubi = 0;
 static int			genecc;
 static int			quiet;
@@ -88,6 +90,7 @@ void usage(void)
 "      --maxoff x   Do not go above this absolute offset\n"
 "      --legacy     Write legacy infix OOB layout\n"
 "      --omap-bch   Write omap BCH compatible OOB layout\n"
+"      --omap-hamming  Write TI-OMAP 3430/3530 romcode hamming OOB layout and ECC\n"
 "      --dm365-rbl  Write DM365 RBL compatible OOB layout\n"
 "      --ubi        UBI writing: per block, skip trailing all-FF pages\n"
 "  -q, --quiet\n"
@@ -124,6 +127,7 @@ void handle_options(int argc, char *argv[])
 			{"ubi",			no_argument,		0, 0},
 			{"dm365-rbl",	no_argument,		0, 0},
 			{"omap-bch",	no_argument,		0, 0},
+			{"omap-hamming",	no_argument,		0, 0},
 			{"write",		no_argument,		0, 'w'},
 			{"erase",		no_argument,		0, 'e'},
 			{"start",		required_argument,	0, 's'},
@@ -158,6 +162,9 @@ void handle_options(int argc, char *argv[])
 				break;
 			case 5:
 				omap_bch = 1;
+				break;
+			case 6:
+				omap_hamming = 1;
 				break;
 			}
 			break;
@@ -299,6 +306,8 @@ int write_page(int blockoff, int pagenum)
 			layout = GENECC_LAYOUT_DM365_RBL;
 		} else if (omap_bch) {
 			layout = GENECC_LAYOUT_OMAP_BCH;
+		} else if (omap_hamming) {
+			layout = GENECC_LAYOUT_OMAP_HAMMINGROMCODE;
 		} else {
 			ERR("genecc with unknown layout!\n");
 			return -EINVAL;
@@ -407,7 +416,7 @@ int main(int argc, char *argv[])
 
 	handle_options(argc, argv);
 
-	if (legacy || dm365_rbl || omap_bch)
+	if (legacy || dm365_rbl || omap_bch || omap_hamming)
     {
 		genecc = 1;
 		fprintf(stderr, "ecc information will be generated and written to the nand\n");

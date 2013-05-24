@@ -31,7 +31,8 @@ include_directories(${CMAKE_SOURCE_DIR})
 # Build the different applications
 #add_subdirectory (src)
 
-add_executable(flashtool flashtool.c bchtool.c genecc.c genecc.h debug.h)
+add_executable(flashtool flashtool.c bchtool.c hammingromcode.c genecc.c genecc.h debug.h)
+target_link_libraries(flashtool m)
 
 INSTALL(TARGETS flashtool
     RUNTIME DESTINATION bin

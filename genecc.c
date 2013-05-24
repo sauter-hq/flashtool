@@ -18,6 +18,7 @@
 #include "debug.h"
 #include "genecc.h"
 #include "bchtool.h"
+#include "hwromcode.h"
 
 const int subsz_raw = 512 + 16;
 const int subsz_data = 512;
@@ -245,6 +246,33 @@ unsigned char *do_genecc(const u8 *src, int layout)
 		raw_subpage = &mtd_raw_buf[0];
 		bch_calculate_ecc(raw_subpage, oob + 12);
 		break;
+
+	case GENECC_LAYOUT_OMAP_HAMMINGROMCODE:
+		memcpy(mtd_raw_buf, src, pagesz_data);
+		oob = mtd_raw_buf + pagesz_data;
+
+		memset(oob, 0xff, 64);
+		
+		for (n = 0; n < 4; n++) {
+			raw_subpage = &mtd_raw_buf[subsz_data * n];
+			unsigned char *p = (oob + 2 + (n * 3 /*bytes per ECC*/));
+			hwromcode_calculate_ecc(raw_subpage, p);
+
+		}
+		
+		printf("-- oob computed : \n");
+		int y;
+		for (y=0; y < 64; ++y) {
+			printf("%#.2x ", oob[y]);
+
+			if ( (y > 0) && ((y % 16) == 0) ) {
+				printf("\n");
+			}
+		}
+		printf("\n");
+
+		break;
+
 	default:
 		ERR("BUG: bad layout value %d\n", layout);
 	}
