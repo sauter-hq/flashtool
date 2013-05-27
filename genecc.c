@@ -242,7 +242,7 @@ unsigned char *do_genecc(const u8 *src, int layout)
 		memcpy(mtd_raw_buf, src, pagesz_data);
 		oob = mtd_raw_buf + pagesz_data;
         // set the bad block marker values to 0xff
-        memset(oob, 0xff, ecc_size);
+        memset(oob, 0xFF, ecc_size);
 		raw_subpage = &mtd_raw_buf[0];
 		bch_calculate_ecc(raw_subpage, oob + 12);
 		break;
@@ -259,7 +259,7 @@ unsigned char *do_genecc(const u8 *src, int layout)
 			hammingromcode_calculate_ecc(raw_subpage, p);
 
 		}
-		
+/***	
 		printf("-- oob computed : \n");
 		int y;
 		for (y=0; y < 64; ++y) {
@@ -270,7 +270,7 @@ unsigned char *do_genecc(const u8 *src, int layout)
 			}
 		}
 		printf("\n");
-
+***/
 		break;
 
 	default:
