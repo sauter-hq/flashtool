@@ -48,7 +48,8 @@ enum exit_codes {
 };
 
 // using ints, can handle up to 2GiB MTD partitions.
-static char			*image_path;
+static const char   *standard_input = "-";
+static char			*image_path = "";
 static char			*mtd_path;
 static int			image_fd = -1;
 static int			mtd_fd;
@@ -56,7 +57,7 @@ static int			max_off = -1;		// excluding OOB
 static int			start_off = -1;		// excluding OOB
 static int			req_length = -1;	// excluding OOB
 static int 			req_pages;
-static int			input_size;
+static int			input_size = -1;
 static int			failbad;
 static int			write_mode;
 static int			erase_mode;
@@ -207,8 +208,10 @@ void handle_options(int argc, char *argv[])
 			image_path = strdup(argv[optind]);
 			optind++;
 		} else {
-			fprintf(stderr, "Must supply input filename with -w\n");
-			error = 1;
+            // assume redirection
+			//fprintf(stderr, "Must supply input filename with -w\n");
+			// error = 1;
+            image_path = standard_input;
 		}
 	} else if (req_length < 0) {
 		fprintf(stderr, "Must supply length if not writing\n");
@@ -243,6 +246,10 @@ void handle_options(int argc, char *argv[])
 
 		exit(EXIT_FAIL);
 	}
+
+    if (!strlen(image_path)) {
+        image_path = standard_input; 
+    }
 }
 
 void dump_stats(void)
@@ -411,6 +418,7 @@ int count_trailing_ff_pages(void)
 
 int main(int argc, char *argv[])
 {
+    int pagelen;
 	int ret;
 	int rewind;		// bad block, write the same data in next block
 
@@ -452,14 +460,26 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAIL);
 	}
 
+    pagelen = mi.size - mi.oobsize; 
+
 	if (write_mode) {
-		image_fd = open(image_path, O_RDONLY);
+        /* Determine if we are reading from standard input or from a file. */  
+        if (strcmp(image_path, standard_input) == 0) {
+            image_fd = STDIN_FILENO;
+        } else {
+		    image_fd = open(image_path, O_RDONLY);
+        }
 		if (image_fd == -1) {
 			perror(image_path);
 			exit(EXIT_FAIL);
 		}
-		input_size = lseek(image_fd, 0, SEEK_END);
-		lseek(image_fd, 0, SEEK_SET);
+        if (image_fd == STDIN_FILENO) {
+            if (input_size < 0)
+                input_size = pagelen;
+        }else {
+		    input_size = lseek(image_fd, 0, SEEK_END);
+		    lseek(image_fd, 0, SEEK_SET);
+        }
 
 		if (req_length < 0) {
 			req_length = input_size;
@@ -537,8 +557,6 @@ int main(int argc, char *argv[])
 		loff_t ll_off;
 
 		block_bytes_done = 0;
-
-		//dump_stats();
 
 		// check bad block. Have to pass a long long to ioctl.
 		ll_off = block_off;
