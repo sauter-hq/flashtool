@@ -208,10 +208,8 @@ void handle_options(int argc, char *argv[])
 			image_path = strdup(argv[optind]);
 			optind++;
 		} else {
-            // assume redirection
-			//fprintf(stderr, "Must supply input filename with -w\n");
-			// error = 1;
-            image_path = standard_input;
+			// No filename then we take from stdin
+			image_path = strdup(standard_input);
 		}
 	} else if (req_length < 0) {
 		fprintf(stderr, "Must supply length if not writing\n");
@@ -247,9 +245,9 @@ void handle_options(int argc, char *argv[])
 		exit(EXIT_FAIL);
 	}
 
-    if (!strlen(image_path)) {
-        image_path = standard_input; 
-    }
+	if (!strlen(image_path)) {
+			image_path = strdup(standard_input); 
+	}
 }
 
 void dump_stats(void)
@@ -418,7 +416,7 @@ int count_trailing_ff_pages(void)
 
 int main(int argc, char *argv[])
 {
-    int pagelen;
+	int pagelen;
 	int ret;
 	int rewind;		// bad block, write the same data in next block
 
@@ -460,26 +458,28 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAIL);
 	}
 
-    pagelen = mi.size - mi.oobsize; 
+	pagelen = mi.size - mi.oobsize; 
 
 	if (write_mode) {
-        /* Determine if we are reading from standard input or from a file. */  
-        if (strcmp(image_path, standard_input) == 0) {
-            image_fd = STDIN_FILENO;
-        } else {
-		    image_fd = open(image_path, O_RDONLY);
-        }
+		/* Determine if we are reading from standard input or from a file. */  
+		if (strcmp(image_path, standard_input) == 0) {
+				image_fd = STDIN_FILENO;
+		} else {
+				image_fd = open(image_path, O_RDONLY);
+		}
+
 		if (image_fd == -1) {
 			perror(image_path);
 			exit(EXIT_FAIL);
 		}
-        if (image_fd == STDIN_FILENO) {
-            if (input_size < 0)
-                input_size = pagelen;
-        }else {
-		    input_size = lseek(image_fd, 0, SEEK_END);
-		    lseek(image_fd, 0, SEEK_SET);
-        }
+
+		if (image_fd == STDIN_FILENO) {
+				if (input_size < 0)
+						input_size = pagelen;
+		} else {
+			input_size = lseek(image_fd, 0, SEEK_END);
+			lseek(image_fd, 0, SEEK_SET);
+		}
 
 		if (req_length < 0) {
 			req_length = input_size;
