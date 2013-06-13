@@ -26,7 +26,7 @@ const int pagesz_data = 2048;
 const int ecc_size = 128;
 
 // hardcode for the only sizing we care about, for now
-u8 mtd_raw_buf[2048 + 128];
+u8 mtd_raw_buf[2*2048 + 128];
 
 /*
  * Reed-Solomon ECC code reverse-engineered from TI PSP flash_utils genecc
@@ -202,7 +202,7 @@ to true.
 unsigned char *do_genecc(const u8 *src, int layout)
 {
 	int n;
-	unsigned char *raw_subpage, *oob;
+	volatile unsigned char *raw_subpage, *oob;
 
 	switch (layout) {
 	case GENECC_LAYOUT_LEGACY:
@@ -240,7 +240,7 @@ unsigned char *do_genecc(const u8 *src, int layout)
 	case GENECC_LAYOUT_OMAP_BCH:
         // kernel 3.2 pagesize is 2k
 		memcpy(mtd_raw_buf, src, pagesz_data);
-		oob = mtd_raw_buf + pagesz_data;
+		oob = &mtd_raw_buf[0] + pagesz_data;
         // set the bad block marker values to 0xff
         memset(oob, 0xFF, ecc_size);
 		raw_subpage = &mtd_raw_buf[0];
@@ -257,7 +257,6 @@ unsigned char *do_genecc(const u8 *src, int layout)
 			raw_subpage = &mtd_raw_buf[subsz_data * n];
 			unsigned char *p = (oob + 2 + (n * 3 /*bytes per ECC*/));
 			hammingromcode_calculate_ecc(raw_subpage, p);
-
 		}
 /***	
 		printf("-- oob computed : \n");

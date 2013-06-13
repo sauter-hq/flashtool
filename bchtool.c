@@ -490,3 +490,9 @@ int bch_calculate_ecc(const unsigned char *buf, unsigned char *code)
     res = nand_bch_calculate_ecc(&info, buf, code);
     return res;
 }
+
+// free the bch memory
+void free_ecc_memory()
+{
+    free_bch(info.bch);
+}

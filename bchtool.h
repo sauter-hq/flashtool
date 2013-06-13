@@ -10,6 +10,7 @@
 
 
 int bch_calculate_ecc(const unsigned char *buf, unsigned char *code);
+void free_ecc_memory();
 
 #endif /* BCHTOOL_H_ */
 

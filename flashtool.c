@@ -75,6 +75,9 @@ static int			block_off;
 static int			bytes_done;			// data bytes successfuly (written)
 static int			block_bytes_done;
 
+
+static int layout = 0;
+
 void usage(void)
 {
 	fprintf(stderr, "\nflashtool - erase/write MTD NAND flash\n\n"
@@ -303,7 +306,6 @@ int write_page(int blockoff, int pagenum)
 	pageoff = blockoff + pagenum * mi.writesize;
 	srcdata = &block_buf[pagenum * mi.writesize];
 	if (genecc) {
-		int layout = 0;
 
 		if (legacy) {
 			layout = GENECC_LAYOUT_LEGACY;
@@ -336,14 +338,14 @@ int write_page(int blockoff, int pagenum)
 	}
 
 	if (genecc) {
-		struct mtd_oob_buf oob;
+		struct mtd_oob_buf moob;
 
-		oob.start = pageoff;
-		oob.length = mi.oobsize;
-		oob.ptr = writeme + mi.writesize;
+		moob.start = pageoff;
+		moob.length = mi.oobsize;
+		moob.ptr = writeme + mi.writesize;
 
 		DBG("OOB\n");
-		if (ioctl(mtd_fd, MEMWRITEOOB, &oob) != 0) {
+		if (ioctl(mtd_fd, MEMWRITEOOB, &moob) != 0) {
 			perror("Write OOB");
 			return -errno;
 		}
@@ -694,6 +696,25 @@ int main(int argc, char *argv[])
 			bytes_done += block_bytes_done;
 		}
 	}
+
+    // clean up bch memory
+	if (genecc) {
+        switch (layout) {
+            case GENECC_LAYOUT_LEGACY:
+                break;
+            case GENECC_LAYOUT_DM365_RBL:
+                break;
+            case GENECC_LAYOUT_OMAP_BCH:
+                // free bch struture
+                free_ecc_memory();
+                break;
+            case GENECC_LAYOUT_OMAP_HAMMINGROMCODE:
+                break;
+            default:
+                break;
+        }
+    }
+    dump_stats();
 
 	if (image_fd != -1)
 		close(image_fd);
